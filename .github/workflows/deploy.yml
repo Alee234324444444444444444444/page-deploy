@@ -1,0 +1,43 @@
+name: Deploy a GitHub Pages con mi PAT
+
+on:
+  push:
+    branches: [ "main" ]   # corre cuando hagas push a main
+  workflow_dispatch:        # y también manualmente
+
+permissions:
+  contents: write           # no usamos GITHUB_TOKEN para publicar, pero permite writes
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (usando mi PAT)
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}   # <- tu PAT guardado en Secrets
+          fetch-depth: 0
+
+      # Si algún día necesitas construir (Vite/React/etc.):
+      # - uses: actions/setup-node@v4
+      #   with: { node-version: 20 }
+      # - run: npm ci && npm run build
+      # y cambia folder: "." por la carpeta de salida (ej. dist)
+
+      - name: Publicar a gh-pages con mi PAT
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}   # <- forzamos tu PAT
+          branch: gh-pages                 # rama donde se publica
+          folder: .                        # raíz del repo (index.html está en /
+          clean: true
+          single-commit: true
+
+      - name: Mostrar URL en el Job Summary
+        run: |
+          REPO="${{ github.repository }}"
+          OWNER=$(echo "$REPO" | cut -d'/' -f1)
+          NAME=$(echo "$REPO" | cut -d'/' -f2)
+          echo "### Tu sitio:" >> $GITHUB_STEP_SUMMARY
+          echo "https://${OWNER}.github.io/${NAME}/" >> $GITHUB_STEP_SUMMARY
